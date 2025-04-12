@@ -17,7 +17,6 @@ def plot_results(counts):
     plt.show()
 
 def main():
-
     results = circuit()
     counts = {"00":0, "01":0, "10":0, "11":0}
     for r in results:

@@ -1,23 +1,20 @@
-from genetic_algorithm import GeneticAlgorithm
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane import numpy as np
+import numpy as np
 
 class EvolvedMatrix(Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
 
-    @classmethod
-    def compute_matrix(cls):
-        i = cls.get_individual()
-        j = cls.get_individual()
-        k = cls.get_individual()
-        l = cls.get_individual()
+    def __init__(self, matrix, wires, id=None):
+        super().__init__(wires=wires, id=id)
+        self._matrix = matrix
 
-        return np.array([[0, 1],
-                         [1, 0]])
+    def matrix(self):
+        return self._matrix
     
-    @classmethod
-    def get_individual(cls):
+    @staticmethod
+    def generate_2x2_unitary_matrix(individual: np.ndarray):
+        #TODO: Generate U = e^{iα}·Rz(β)·Rx(γ)·Rz(δ)
         return 1

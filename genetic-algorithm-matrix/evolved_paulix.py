@@ -1,15 +1,14 @@
+from evolved_matrix import EvolvedMatrix
 import pennylane as qml
-from pennylane.operation import Operation
 from pennylane import numpy as np
 import matplotlib.pyplot as plt
 
 dev = qml.device("default.qubit",wires=1, shots=100)
 
 @qml.qnode(dev)
-def traditional_bit_flip_circuit(initial_state):
+def bit_flip_circuit(evolved_matrix, initial_state):
     qml.BasisState(np.array([initial_state]), wires=[0])
-    #TODO: replace qml.PauliX(wires=0) with evolved matrix.
-    #              qml.EvolvedMatrix(wires=0)
+    qml.EvolvedMatrix(evolved_matrix, wires=0)
     return qml.sample(wires=[0])
 
 def plot(title, results):
@@ -22,10 +21,11 @@ def plot(title, results):
     plt.show()
 
 def main():
-    results_from_0 = traditional_bit_flip_circuit(0)
+    evolved_matrix = EvolvedMatrix()
+    results_from_0 = bit_flip_circuit(0)
     plot("Bit flip: |0> → |1>",results_from_0)
 
-    results_from_1 = traditional_bit_flip_circuit(1)
+    results_from_1 = bit_flip_circuit(1)
     plot("Bit flip: |1> → |0>",results_from_1)
 
 

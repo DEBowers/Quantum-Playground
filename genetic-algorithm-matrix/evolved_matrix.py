@@ -1,15 +1,8 @@
-import pennylane as qml
-from pennylane.operation import Operation
 import numpy as np
 import math as math
 
-class EvolvedMatrix(Operation):
-    num_params = 0
-    num_wires = 1
-    par_domain = None
-
-    def __init__(self, matrix, wires, id=None):
-        super().__init__(wires=wires, id=id)
+class EvolvedMatrix():
+    def __init__(self, matrix):
         self._matrix = matrix
 
     def matrix(self):

@@ -1,14 +1,16 @@
 from evolved_matrix import EvolvedMatrix
+from genetic_algorithm import GeneticAlgorithm
 import pennylane as qml
 from pennylane import numpy as np
 import matplotlib.pyplot as plt
+import math as math
 
 dev = qml.device("default.qubit",wires=1, shots=100)
 
 @qml.qnode(dev)
 def bit_flip_circuit(evolved_matrix, initial_state):
     qml.BasisState(np.array([initial_state]), wires=[0])
-    qml.EvolvedMatrix(evolved_matrix, wires=0)
+    qml.QubitUnitary(evolved_matrix, wires=0)
     return qml.sample(wires=[0])
 
 def plot(title, results):
@@ -21,11 +23,11 @@ def plot(title, results):
     plt.show()
 
 def main():
-    evolved_matrix = EvolvedMatrix()
-    results_from_0 = bit_flip_circuit(0)
+    evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(np.random.uniform(0,2*math.pi,4))
+    results_from_0 = bit_flip_circuit(evolved_matrix,0)
     plot("Bit flip: |0> → |1>",results_from_0)
 
-    results_from_1 = bit_flip_circuit(1)
+    results_from_1 = bit_flip_circuit(evolved_matrix,1)
     plot("Bit flip: |1> → |0>",results_from_1)
 
 

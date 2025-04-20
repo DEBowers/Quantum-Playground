@@ -23,7 +23,7 @@ def plot(title, results):
     plt.show()
 
 def main():
-    evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(np.random.uniform(0,2*math.pi,4))
+    evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(np.array([np.pi/2, 0.0, np.pi, np.pi]))
     results_from_0 = bit_flip_circuit(evolved_matrix,0)
     plot("Bit flip: |0> → |1>",results_from_0)
 

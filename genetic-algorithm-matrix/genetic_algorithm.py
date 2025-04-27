@@ -40,7 +40,7 @@ class GeneticAlgorithm():
         parent2 = self.population[best_indices[1]]
 
         new_population = [parent1,parent2]
-        fresh_pop_size = np.random.randint(low=2,high=self.pop_size//2)
+        fresh_pop_size = np.random.randint(low=1,high=self.pop_size//20)
 
         while len(new_population) < self.pop_size - fresh_pop_size:
             if np.random.rand() > self.crossover_rate :

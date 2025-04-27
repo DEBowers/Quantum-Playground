@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math as math
 
-dev = qml.device("default.qubit",wires=1, shots=100)
+dev = qml.device("default.qubit",wires=1, shots=10000)
 @qml.qnode(dev)
 def evolved_bit_flip_circuit(evolved_matrix, initial_state):
     qml.BasisState(np.array([initial_state]), wires=[0])
@@ -19,7 +19,7 @@ def traditional_bit_flip_circuit(initial_state):
     qml.PauliX(wires=0)
     return qml.sample(wires=[0])
 
-def plot(title, input_data, results):
+def plot_more(title, input_data, results):
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
     # common bin settings
@@ -43,6 +43,14 @@ def plot(title, input_data, results):
     plt.tight_layout()
     plt.show()
 
+def plot(title, results):
+    plt.figure()
+    plt.hist(results, bins=[-0.5, 0.5, 1.5], edgecolor="black", rwidth=0.8)
+    plt.xticks([0, 1])
+    plt.xlabel("Qubit state")
+    plt.ylabel("Counts")
+    plt.title(title)
+    plt.show()
 
 def get_fitness(individual):
     evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(individual)
@@ -55,7 +63,7 @@ def get_fitness(individual):
 
 def evolve() -> GeneticAlgorithm:
     pop_size = 100
-    ga = GeneticAlgorithm(pop_size, 8)
+    ga = GeneticAlgorithm(pop_size, 4)
     for _ in range(1000):
         fitness_rates = []
         for i in range(pop_size):
@@ -66,12 +74,19 @@ def evolve() -> GeneticAlgorithm:
 def main():
     ga = evolve()
     print(ga)
-    # evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(np.array([np.pi/2, 0.0, np.pi, np.pi]))
-    # results_from_0 = evolved_bit_flip_circuit(evolved_matrix,0)
-    # plot("Bit flip: |0> → |1>",results_from_0)
+    fitness_rates = []
+    for i in range(100):
+        fitness_rates.append(get_fitness(ga.population[i]))
 
-    # results_from_1 = evolved_bit_flip_circuit(evolved_matrix,1)
-    # plot("Bit flip: |1> → |0>",results_from_1)
+    best_indices = np.argsort(fitness_rates)[:2]
+    parent1 = ga.population[best_indices[0]]
+    print (EvolvedMatrix.generate_2x2_unitary_matrix(parent1))
+    evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(parent1)
+    results_from_0 = evolved_bit_flip_circuit(evolved_matrix,0)
+    plot("Bit flip: |0> → |1>",results_from_0)
+
+    results_from_1 = evolved_bit_flip_circuit(evolved_matrix,1)
+    plot("Bit flip: |1> → |0>",results_from_1)
 
 
 if __name__ == "__main__":

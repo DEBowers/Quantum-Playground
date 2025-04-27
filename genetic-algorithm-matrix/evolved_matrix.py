@@ -24,7 +24,7 @@ class EvolvedMatrix():
                        [math.sin(gamma/2),math.cos(gamma/2)]],
                        dtype=complex)
         
-        Rz = np.matrix([[np.exp(-1j*delta/2),0],
+        Rz = np.matrix([[np.exp(-1j*delta/2),0], 
                        [0,np.exp(1j*delta/2)]],
                        dtype=complex)
     

@@ -5,19 +5,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math as math
 
-dev = qml.device("default.qubit",wires=1, shots=10000)
+shooter = qml.device("default.qubit",wires=1, shots=100000)
+@qml.qnode(shooter)
+def shoot_evolved_bit_flip_circuit(evolved_matrix, initial_state):
+    qml.BasisState(np.array([initial_state]), wires=[0])
+    qml.QubitUnitary(evolved_matrix, wires=0)
+    return qml.sample(wires=0)
+
+dev = qml.device("default.qubit",wires=1, shots=None)
 @qml.qnode(dev)
 def evolved_bit_flip_circuit(evolved_matrix, initial_state):
     qml.BasisState(np.array([initial_state]), wires=[0])
     qml.QubitUnitary(evolved_matrix, wires=0)
-    return qml.sample(wires=[0])
+    return qml.expval(qml.PauliZ(wires=0))
 
-traditional_harvester = qml.device("default.qubit",wires=1, shots=100)
+traditional_harvester = qml.device("default.qubit",wires=1, shots=None)
 @qml.qnode(traditional_harvester)
 def traditional_bit_flip_circuit(initial_state):
     qml.BasisState(np.array([initial_state]), wires=[0])
     qml.PauliX(wires=0)
-    return qml.sample(wires=[0])
+    return qml.expval(qml.PauliZ(wires=0))
 
 def plot_more(title, input_data, results):
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
@@ -54,17 +61,22 @@ def plot(title, results):
 
 def get_fitness(individual):
     evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(individual)
+    #print (evolved_matrix)
     error = 0
-    for initial_state in [0, 1]:
-        samples = evolved_bit_flip_circuit(evolved_matrix, initial_state)
-        expected = 1 - initial_state
-        error += np.sum(samples != expected)
+    samples = evolved_bit_flip_circuit(evolved_matrix, 0)
+    expected = traditional_bit_flip_circuit(0)
+    error += np.sum(np.abs(samples - expected))
+    # for initial_state in [0, 0]:
+    #     samples = evolved_bit_flip_circuit(evolved_matrix, initial_state)
+    #     expected = traditional_bit_flip_circuit(initial_state)
+    #     error += np.sum(np.abs(samples - expected))
     return error
 
 def evolve() -> GeneticAlgorithm:
     pop_size = 100
     ga = GeneticAlgorithm(pop_size, 4)
     for _ in range(1000):
+        print(_)
         fitness_rates = []
         for i in range(pop_size):
             fitness_rates.append(get_fitness(ga.population[i]))
@@ -82,10 +94,11 @@ def main():
     parent1 = ga.population[best_indices[0]]
     print (EvolvedMatrix.generate_2x2_unitary_matrix(parent1))
     evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(parent1)
-    results_from_0 = evolved_bit_flip_circuit(evolved_matrix,0)
+    results_from_0 = shoot_evolved_bit_flip_circuit(evolved_matrix,0)
     plot("Bit flip: |0> → |1>",results_from_0)
+    hermitian_matrix = EvolvedMatrix.make_hermitian(evolved_matrix)
 
-    results_from_1 = evolved_bit_flip_circuit(evolved_matrix,1)
+    results_from_1 = shoot_evolved_bit_flip_circuit(evolved_matrix,1)
     plot("Bit flip: |1> → |0>",results_from_1)
 
 

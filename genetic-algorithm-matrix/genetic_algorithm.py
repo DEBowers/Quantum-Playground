@@ -47,10 +47,13 @@ class GeneticAlgorithm():
                 new_population.append(new_population[np.random.randint(0,2)].copy())
                 continue
             crossover_point  = np.random.randint(1, self.chromosome_length)
-            child = parent1[:crossover_point] + parent2[crossover_point:]
+            child = np.concatenate([parent1[:crossover_point], 
+                                            parent2[crossover_point:]])
             child = self.mutate(child)
             new_population.append(child)
 
         while len(new_population) < self.pop_size:
-            new_population.append(self.generate_clean_individual)
+            new_population.append(self.generate_clean_individual())
+
+        self.population = new_population
 

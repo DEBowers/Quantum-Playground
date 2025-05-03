@@ -1,10 +1,11 @@
 # Quantum-Playground
-
 A basic project which hosts basic Quantum Simulations.
 
 
 ## Required Python Libraries
->   PennyLane
->   matplotlib
+-   PennyLane
+-   matplotlib
+-   numpy
 
-* pip install pennylane matplotlib
+### Pip Command:
+pip install pennylane matplotlib

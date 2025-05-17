@@ -3,7 +3,6 @@ from genetic_algorithm import GeneticAlgorithm
 import pennylane as qml
 import numpy as np
 import matplotlib.pyplot as plt
-import math as math
 
 shooter = qml.device("default.qubit",wires=1, shots=100000)
 @qml.qnode(shooter)
@@ -61,11 +60,11 @@ def plot(title, results):
 
 def get_fitness(individual):
     evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(individual)
-    #print (evolved_matrix)
+    evolved_matrix = EvolvedMatrix.make_hermitian(evolved_matrix)
     error = 0
     samples = evolved_bit_flip_circuit(evolved_matrix, 0)
     expected = traditional_bit_flip_circuit(0)
-    error += np.sum(np.abs(samples - expected))
+    error += np.abs(samples - expected)
     # for initial_state in [0, 0]:
     #     samples = evolved_bit_flip_circuit(evolved_matrix, initial_state)
     #     expected = traditional_bit_flip_circuit(initial_state)
@@ -92,11 +91,12 @@ def main():
 
     best_indices = np.argsort(fitness_rates)[:2]
     parent1 = ga.population[best_indices[0]]
-    print (EvolvedMatrix.generate_2x2_unitary_matrix(parent1))
     evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(parent1)
+    evolved_matrix = EvolvedMatrix.make_hermitian(evolved_matrix)
+    print(parent1)
+    print(evolved_matrix)
     results_from_0 = shoot_evolved_bit_flip_circuit(evolved_matrix,0)
     plot("Bit flip: |0> → |1>",results_from_0)
-    hermitian_matrix = EvolvedMatrix.make_hermitian(evolved_matrix)
 
     results_from_1 = shoot_evolved_bit_flip_circuit(evolved_matrix,1)
     plot("Bit flip: |1> → |0>",results_from_1)

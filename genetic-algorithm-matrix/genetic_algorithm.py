@@ -26,12 +26,12 @@ class GeneticAlgorithm():
         return population
 
     def generate_clean_individual(self) -> np.ndarray:
-        return np.random.uniform(0,2*math.pi,4)
+        return np.random.uniform(0,1,4)
 
-    def mutate(self, individual):
+    def mutate(self, individual : np.ndarray):
         if(np.random.rand() < self.mutation_rate):
-            clean_individual = self.generate_clean_individual()
-            individual = [(x + y) / 2 for x, y in zip(individual, clean_individual)]
+            for i in range(individual.size) :
+                individual[i] *= np.random.uniform(low=0.0,high=2.0)
         return individual
 
     def tournament_select(self, fitness_rates : list, tournament_size : int):
@@ -46,7 +46,7 @@ class GeneticAlgorithm():
         return self.get_elite(tournament_fitness,tournament_population)
 
     def get_elite(self, fitness_rates :list, population):
-        best_indices = np.argsort(fitness_rates)[:2]
+        best_indices = np.argsort(fitness_rates)
         parent = population[best_indices[0]]
         return parent
 
@@ -57,7 +57,9 @@ class GeneticAlgorithm():
         fresh_pop_size = np.random.randint(low=1,high=self.population_size//20)
 
         while len(new_population) < self.population_size - fresh_pop_size:
-            child = parent
+            child = np.ndarray(parent.size)
+            for i in range(parent.size):
+                child[i] = parent[i]
             child = self.mutate(child)
             new_population.append(child)
 

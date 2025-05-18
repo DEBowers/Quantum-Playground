@@ -4,30 +4,28 @@ import pennylane as qml
 import numpy as np
 import matplotlib.pyplot as plt
 
-shooter = qml.device("lightning.gpu",wires=1, shots=100000)
+shooter = qml.device("lightning.gpu",wires=2, shots=100000)
 @qml.qnode(shooter)
-def shoot_evolved_circuit(evolved_matrix, initial_state):
-    qml.BasisState(np.array([initial_state]), wires=[0])
-    qml.QubitUnitary(evolved_matrix, wires=0)
+def shoot_evolved_circuit(evolved_matrix):
+    qml.QubitUnitary(evolved_matrix, wires=1)
+    qml.CNOT(wires=[1,0])
     return qml.sample(wires=0)
 
 @qml.qnode(shooter)
-def shoot_traditional_circuit(initial_state):
-    qml.BasisState(np.array([initial_state]), wires=[0])
-    qml.PauliZ(wires=0)
-    return qml.sample(wires=0)
+def shoot_traditional_circuit():
+    qml.Hadamard(wires=1)
+    qml.CNOT(wires=[1,0])
+    return qml.sample(wires=[0, 1])
 
 analytical = qml.device("default.qubit",wires=1, shots=None)
 @qml.qnode(analytical)
-def evolved_circuit(evolved_matrix, initial_state):
-    qml.BasisState(np.array([initial_state]), wires=[0])
+def evolved_circuit(evolved_matrix):
     qml.QubitUnitary(evolved_matrix, wires=0)
     return qml.expval(qml.PauliZ(wires=0))
 
 @qml.qnode(analytical)
-def traditional_circuit(initial_state):
-    qml.BasisState(np.array([initial_state]), wires=[0])
-    qml.PauliY(wires=0)
+def traditional_circuit():
+    qml.Hadamard(wires=0)
     return qml.expval(qml.PauliZ(wires=0))
 
 def plot(title, results):
@@ -43,13 +41,9 @@ def get_fitness(individual):
     evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(individual)
     #evolved_matrix = EvolvedMatrix.make_hermitian(evolved_matrix)
     error = 0
-    #samples = evolved_bit_flip_circuit(evolved_matrix, 0)
-    #expected = traditional_bit_flip_circuit(0)
-    #error += np.abs(samples - expected)
-    for initial_state in [0, 1]:
-        samples = evolved_circuit(evolved_matrix, initial_state)
-        expected = traditional_circuit(initial_state)
-        error += np.sum(np.abs(samples - expected))
+    samples = evolved_circuit(evolved_matrix)
+    expected = traditional_circuit()
+    error += np.sum(np.abs(samples - expected))
     return error
 
 def evolve() -> GeneticAlgorithm:
@@ -74,6 +68,7 @@ def calc_outcomes(results : np.ndarray):
     print(f"Number 0's: {results.size - sum}, Number of 1's: {sum}")
 
 def main():
+    results = traditional_circuit()
     ga = evolve()
     fitness_rates = get_fitness_rates(ga)
     parent = ga.get_elite(fitness_rates=fitness_rates, population=ga.population)

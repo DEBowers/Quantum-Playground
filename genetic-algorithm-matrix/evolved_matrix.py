@@ -7,7 +7,7 @@ class EvolvedMatrix():
 
     def matrix(self):
         return self._matrix
-    
+
     @staticmethod
     # Generate U = e^{iα}·Rx(β)·Ry(γ)·Rz(δ)
     def generate_2x2_unitary_matrix(individual: np.ndarray) -> np.ndarray:
@@ -18,17 +18,17 @@ class EvolvedMatrix():
         Rx = np.array([[np.exp(-1j*beta/2), 0],
                        [0, np.exp(1j*beta/2)]], 
                        dtype=complex)
-        
+
         Ry = np.array([[math.cos(gamma/2), (-1)*math.sin(gamma/2)],
                        [math.sin(gamma/2), math.cos(gamma/2)]],
                        dtype=complex)
-        
+
         Rz = np.array([[np.exp(-1j*delta/2), 0], 
                        [0, np.exp(1j*delta/2)]],
                        dtype=complex)
-    
+
         U = term1 * np.dot(np.dot(Rx, Ry), Rz)
-        
+
         return U
 
     @staticmethod

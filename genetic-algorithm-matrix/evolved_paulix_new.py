@@ -4,6 +4,7 @@ import pennylane as qml
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import plot_results as pr 
 
 evaluation_device = qml.device("lightning.gpu",wires=1, shots=100000)
 @qml.qnode(evaluation_device)
@@ -18,7 +19,7 @@ def shoot_traditional_circuit(initial_state):
     qml.PauliX(wires=0)
     return qml.sample(wires=0)
 
-training_shots = 30000
+training_shots = 10000
 training_device = qml.device("default.qubit",wires=1, shots=training_shots)
 @qml.qnode(training_device)
 def evolved_bit_flip_circuit(evolved_matrix, initial_state):
@@ -41,16 +42,24 @@ def plot(title, results):
     plt.title(title)
     plt.show()
 
+population_size=100
+mutation_rate=0.1
+crossover_rate=1.0
+tournament_size=80
+fitness_vs_time= {}
 def evolve() -> GeneticAlgorithm:
-    ga = GeneticAlgorithm(100, 4, 50)
-    for _ in range(1):
-        print(_)
+    ga = GeneticAlgorithm(population_size=population_size, chromosome_length=4, mutation_rate=mutation_rate,
+                          crossover_rate=crossover_rate, tournament_size=tournament_size)
+    for i in range(20):
         start_time = time.perf_counter()
         fitness_rates = get_fitness_rates(ga)
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
-        print(f"Time taken to get fitness rates: {elapsed_time}")
-        ga.evolve_new_population(fitness_rates)
+        print(f"Iteration {i}: Time taken to get fitness rates: {elapsed_time}")
+
+        best_indices = np.argsort(fitness_rates)
+        fitness_vs_time[i] = fitness_rates[best_indices[0]]
+        ga.evolve_new_population_tournmanent_select(fitness_rates)
     return ga
 
 def get_fitness_rates(ga : GeneticAlgorithm):
@@ -81,7 +90,11 @@ def main():
     ga = evolve()
     end_time = time.perf_counter()
     elapsed_time = end_time - start_time
+    
+    pr.export_ga_run(population_size=population_size, mutation_rate=mutation_rate, crossover_rate=crossover_rate,
+                     tournament_size=tournament_size, fitness_vs_time=fitness_vs_time)
 
+    pr.plot_all_runs()
     print("----------------------------------------------------")
     print(f"Time taken to train the GA: {elapsed_time}")
     print("----------------------------------------------------")
@@ -90,8 +103,8 @@ def main():
     parent = ga.get_elite(fitness_rates=fitness_rates, population=ga.population)
     evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(parent)
 
-    print(f"Strongest individual from the GA {parent}")
-    print(f"Matrix evolved from individual: {evolved_matrix}")
+    print(f"Strongest individual from the GA {parent} \n")
+    print(f"Matrix evolved from individual: {evolved_matrix} \n")
 
     results_from_0 = shoot_evolved_circuit(evolved_matrix,0)
     print("----------------------------------------------------")
@@ -100,24 +113,15 @@ def main():
 
     print("Outcomes calculated from evolved Matrix:")
     calc_outcomes(results_from_0)
-    plot("bit flip: |0> → |1>",results_from_0)
-
-    results_from_0 = shoot_traditional_circuit(0)
-    print("Outcomes calculated from traditional Pauli X:")
-    calc_outcomes(results_from_0)
 
     results_from_1 = shoot_evolved_circuit(evolved_matrix,1)
     print("----------------------------------------------------")
-    print("Results from 0:")
+    print("Results from 1:")
     qml.draw(results_from_1)
 
     print("Outcomes calculated from evolved Matrix:")
     calc_outcomes(results_from_1)
-    plot("bit flip: |0> → |1>",results_from_1)
 
-    results_from_1 = shoot_traditional_circuit(1)
-    print("Outcomes calculated from traditional Pauli X:")
-    calc_outcomes(results_from_1)
 
 if __name__ == "__main__":
     main()

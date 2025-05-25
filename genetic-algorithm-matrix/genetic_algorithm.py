@@ -4,9 +4,9 @@ import math as math
 class GeneticAlgorithm():
     def __init__(
         self,
-        population_size: int,
-        chromosome_length: int,
-        mutation_rate: float = 0.50,
+        population_size: int = 100,
+        chromosome_length: int = 4,
+        mutation_rate: float = 0.5,
         crossover_rate: float = 0.9,
         tournament_size: int = 0
     ):
@@ -72,8 +72,7 @@ class GeneticAlgorithm():
 
     def evolve_new_population_tournmanent_select(self, fitness_rates : list):
         new_population = [self.get_elite(fitness_rates,self.population)]
-        #fresh_pop_size = np.random.randint(low=1,high=self.population_size//20)
-        fresh_pop_size = 0
+        fresh_pop_size = np.random.randint(low=1,high=5)
 
         while len(new_population) < self.population_size - fresh_pop_size:
             parent1 = self.tournament_select(fitness_rates, self.tournament_size)

@@ -3,32 +3,34 @@ from genetic_algorithm import GeneticAlgorithm
 import pennylane as qml
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
-shooter = qml.device("lightning.gpu",wires=1, shots=100000)
-@qml.qnode(shooter)
+evaluation_device = qml.device("lightning.gpu",wires=1, shots=100000)
+@qml.qnode(evaluation_device)
 def shoot_evolved_circuit(evolved_matrix, initial_state):
     qml.BasisState(np.array([initial_state]), wires=[0])
     qml.QubitUnitary(evolved_matrix, wires=0)
     return qml.sample(wires=0)
 
-@qml.qnode(shooter)
+@qml.qnode(evaluation_device)
 def shoot_traditional_circuit(initial_state):
     qml.BasisState(np.array([initial_state]), wires=[0])
     qml.PauliX(wires=0)
     return qml.sample(wires=0)
 
-analytical = qml.device("default.qubit",wires=1, shots=None)
-@qml.qnode(analytical)
+training_shots = 30000
+training_device = qml.device("default.qubit",wires=1, shots=training_shots)
+@qml.qnode(training_device)
 def evolved_bit_flip_circuit(evolved_matrix, initial_state):
     qml.BasisState(np.array([initial_state]), wires=[0])
     qml.QubitUnitary(evolved_matrix, wires=0)
-    return qml.expval(qml.PauliZ(wires=0))
+    return qml.sample(wires=0)
 
-@qml.qnode(analytical)
+@qml.qnode(training_device)
 def traditional_bit_flip_circuit(initial_state):
     qml.BasisState(np.array([initial_state]), wires=[0])
     qml.PauliX(wires=0)
-    return qml.expval(qml.PauliZ(wires=0))
+    return qml.sample(wires=0)
 
 def plot(title, results):
     plt.figure()
@@ -40,11 +42,15 @@ def plot(title, results):
     plt.show()
 
 def evolve() -> GeneticAlgorithm:
-    ga = GeneticAlgorithm(population_size=100, chromosome_length=4, tournament_size=50)
-    for _ in range(1000):
+    ga = GeneticAlgorithm(100, 4, 50)
+    for _ in range(1):
         print(_)
+        start_time = time.perf_counter()
         fitness_rates = get_fitness_rates(ga)
-        ga.evolve_new_population_tournmanent_select(fitness_rates)
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        print(f"Time taken to get fitness rates: {elapsed_time}")
+        ga.evolve_new_population(fitness_rates)
     return ga
 
 def get_fitness_rates(ga : GeneticAlgorithm):
@@ -57,44 +63,61 @@ def get_fitness_rates(ga : GeneticAlgorithm):
 def get_fitness(individual):
     evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(individual)
     error = 0
-    for initial_state in [0, 1]:
-        samples = evolved_bit_flip_circuit(evolved_matrix, initial_state)
-        expected = traditional_bit_flip_circuit(initial_state)
-        error += np.sum(np.abs(samples - expected))
-    return error
+    samples = evolved_bit_flip_circuit(evolved_matrix, 0)
+    error = training_shots - np.sum(samples)
+    samples = evolved_bit_flip_circuit(evolved_matrix, 1)
+    error = np.sum(samples)
+    return error/(training_shots*2)
 
 def calc_outcomes(results : np.ndarray):
     sum = 0
     for i in range(results.size) :
         sum += results[i]
-    print(f"Number 0's: {results.size - sum}, Number of 1's: {sum}")
+    print(f"Number 0's: {results.size - sum}, Number of 1's: {sum} \n")
 
 def main():
+    print("Begin training the GA")
+    start_time = time.perf_counter()
     ga = evolve()
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+
+    print("----------------------------------------------------")
+    print(f"Time taken to train the GA: {elapsed_time}")
+    print("----------------------------------------------------")
+
     fitness_rates = get_fitness_rates(ga)
     parent = ga.get_elite(fitness_rates=fitness_rates, population=ga.population)
     evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(parent)
-    #evolved_matrix = EvolvedMatrix.make_hermitian(evolved_matrix)
-    print(parent)
-    print(evolved_matrix)
+
+    print(f"Strongest individual from the GA {parent}")
+    print(f"Matrix evolved from individual: {evolved_matrix}")
+
     results_from_0 = shoot_evolved_circuit(evolved_matrix,0)
-    print("________________")
+    print("----------------------------------------------------")
     print("Results from 0:")
-    print(qml.draw(results_from_0))
+    qml.draw(results_from_0)
+
+    print("Outcomes calculated from evolved Matrix:")
     calc_outcomes(results_from_0)
-    plot("Bit flip: |0> → |1>",results_from_0)
+    plot("bit flip: |0> → |1>",results_from_0)
+
     results_from_0 = shoot_traditional_circuit(0)
+    print("Outcomes calculated from traditional Pauli X:")
     calc_outcomes(results_from_0)
 
     results_from_1 = shoot_evolved_circuit(evolved_matrix,1)
-    print("________________")
-    print("Results from 1:")
-    print(qml.draw(results_from_1))
-    calc_outcomes(results_from_1)
-    plot("Bit flip: |1> → |0>",results_from_1)
-    results_from_1 = shoot_traditional_circuit(1)
-    calc_outcomes(results_from_1)
+    print("----------------------------------------------------")
+    print("Results from 0:")
+    qml.draw(results_from_1)
 
+    print("Outcomes calculated from evolved Matrix:")
+    calc_outcomes(results_from_1)
+    plot("bit flip: |0> → |1>",results_from_1)
+
+    results_from_1 = shoot_traditional_circuit(1)
+    print("Outcomes calculated from traditional Pauli X:")
+    calc_outcomes(results_from_1)
 
 if __name__ == "__main__":
     main()

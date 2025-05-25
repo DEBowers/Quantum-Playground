@@ -8,6 +8,7 @@ class GeneticAlgorithm():
         chromosome_length: int,
         mutation_rate: float = 0.50,
         crossover_rate: float = 0.9,
+        tournament_size: int = 0
     ):
         self.population_size = population_size
         self.population = self.generate_clean_population(population_size)
@@ -15,6 +16,7 @@ class GeneticAlgorithm():
         self.chromosome_length = chromosome_length
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
+        self.tournament_size = tournament_size if tournament_size != 0 else population_size
 
     def get_population(self) -> list[np.ndarray]:
         return self.population
@@ -68,21 +70,15 @@ class GeneticAlgorithm():
 
         self.population = new_population
 
-    def elitism_evole_new_population_two_parents(self, fitness_rates : list):
-        best_indices = np.argsort(fitness_rates)[:2]
-        parent1 = self.population[best_indices[0]]
-        parent2 = self.population[best_indices[1]]
-
-        new_population = [parent1,parent2]
-        fresh_pop_size = np.random.randint(low=1,high=self.population_size//20)
+    def evolve_new_population_tournmanent_select(self, fitness_rates : list):
+        new_population = [self.get_elite(fitness_rates,self.population)]
+        #fresh_pop_size = np.random.randint(low=1,high=self.population_size//20)
+        fresh_pop_size = 0
 
         while len(new_population) < self.population_size - fresh_pop_size:
-            if np.random.rand() > self.crossover_rate :
-                new_population.append(new_population[np.random.randint(0,2)].copy())
-                continue
-            crossover_point  = np.random.randint(1, self.chromosome_length)
-            child = np.concatenate([parent1[:crossover_point], 
-                                            parent2[crossover_point:]])
+            parent1 = self.tournament_select(fitness_rates, self.tournament_size)
+            parent2 = self.tournament_select(fitness_rates, self.tournament_size)
+            child = self.crossover(parent1, parent2)
             child = self.mutate(child)
             new_population.append(child)
 
@@ -91,3 +87,24 @@ class GeneticAlgorithm():
 
         self.population = new_population
 
+    def crossover(self, parent1 : np.ndarray, parent2 : np.ndarray):
+        child = np.zeros(parent1.size)
+        for i in range(parent1.size):
+            selector = np.random.randint(0,2)
+            if(selector == 0):
+                child[i] = parent1[i]
+            else:
+                child[i] = parent2[i]
+
+        return child
+
+def test():
+    ga = GeneticAlgorithm(10,4)
+    for _ in range(10):
+        parent2 = ga.generate_clean_individual()
+        parent1 = ga.generate_clean_individual()
+        child = ga.crossover(parent1,parent2)
+        ga.mutate(child)
+
+if __name__ == "__main__":
+    test()

@@ -5,15 +5,15 @@ class GeneticAlgorithm():
     def __init__(
         self,
         population_size: int = 100,
-        chromosome_length: int = 4,
+        chromosome_length: int = 8,
         mutation_rate: float = 0.5,
         crossover_rate: float = 0.9,
         tournament_size: int = 0
     ):
         self.population_size = population_size
+        self.chromosome_length = chromosome_length
         self.population = self.generate_clean_population(population_size)
 
-        self.chromosome_length = chromosome_length
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         self.tournament_size = tournament_size if tournament_size != 0 else population_size
@@ -28,7 +28,7 @@ class GeneticAlgorithm():
         return population
 
     def generate_clean_individual(self) -> np.ndarray:
-        return np.random.uniform(0,1,4)
+        return np.random.uniform(-2*math.pi,2*math.pi,self.chromosome_length)
 
     def mutate(self, individual : np.ndarray):
         if(np.random.rand() < self.mutation_rate):
@@ -70,7 +70,7 @@ class GeneticAlgorithm():
 
         self.population = new_population
 
-    def evolve_new_population_tournmanent_select(self, fitness_rates : list):
+    def evolve_new_population_tournament_select(self, fitness_rates : list):
         new_population = [self.get_elite(fitness_rates,self.population)]
         fresh_pop_size = np.random.randint(low=1,high=5)
 
@@ -98,7 +98,7 @@ class GeneticAlgorithm():
         return child
 
 def test():
-    ga = GeneticAlgorithm(10,4)
+    ga = GeneticAlgorithm(10)
     for _ in range(10):
         parent2 = ga.generate_clean_individual()
         parent1 = ga.generate_clean_individual()

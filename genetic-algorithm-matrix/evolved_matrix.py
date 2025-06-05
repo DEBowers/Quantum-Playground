@@ -34,3 +34,20 @@ class EvolvedMatrix():
     @staticmethod
     def make_hermitian(matrix: np.ndarray) -> np.ndarray:
         return (matrix + np.conjugate(matrix).T) / 2
+
+    @staticmethod
+    def generate_2x2_matrix(individual: np.ndarray) -> np.ndarray:
+        a, b, c, d, e, f, g, h = individual
+        
+        M = np.array([[a + b*1j, c + d*1j],
+                        [e + f*1j, g + h*1j]],
+                       dtype=complex)
+
+        return M
+
+    @staticmethod
+    def is_unitary(matrix : np.ndarray) -> bool:
+        conjugate = np.conjugate(matrix).T
+        product = matrix @ conjugate
+        identity = np.identity(matrix.shape[0])
+        return np.allclose(product, identity)

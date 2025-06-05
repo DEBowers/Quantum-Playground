@@ -25,32 +25,24 @@ training_device = qml.device("default.qubit",wires=1, shots=training_shots)
 def evolved_bit_flip_circuit(evolved_matrix, initial_state):
     qml.BasisState(np.array([initial_state]), wires=[0])
     qml.QubitUnitary(evolved_matrix, wires=0)
-    return qml.sample(wires=0)
+    return qml.probs(wires=0)
 
 @qml.qnode(training_device)
 def traditional_bit_flip_circuit(initial_state):
     qml.BasisState(np.array([initial_state]), wires=[0])
     qml.PauliX(wires=0)
-    return qml.sample(wires=0)
+    return qml.probs(wires=0)
+    #return qml.sample(wires=0)
 
-def plot(title, results):
-    plt.figure()
-    plt.hist(results, bins=[-0.5, 0.5, 1.5], edgecolor="black", rwidth=0.8)
-    plt.xticks([0, 1])
-    plt.xlabel("Qubit state")
-    plt.ylabel("Counts")
-    plt.title(title)
-    plt.show()
-
-population_size=100
-mutation_rate=0.1
-crossover_rate=1.0
-tournament_size=80
-fitness_vs_time= {}
 def evolve() -> GeneticAlgorithm:
+    global population_size
+    global mutation_rate
+    global crossover_rate
+    global tournament_size
+    global fitness_vs_time
     ga = GeneticAlgorithm(population_size=population_size, chromosome_length=4, mutation_rate=mutation_rate,
                           crossover_rate=crossover_rate, tournament_size=tournament_size)
-    for i in range(20):
+    for i in range(100):
         start_time = time.perf_counter()
         fitness_rates = get_fitness_rates(ga)
         end_time = time.perf_counter()
@@ -59,7 +51,7 @@ def evolve() -> GeneticAlgorithm:
 
         best_indices = np.argsort(fitness_rates)
         fitness_vs_time[i] = fitness_rates[best_indices[0]]
-        ga.evolve_new_population_tournmanent_select(fitness_rates)
+        ga.evolve_new_population_tournament_select(fitness_rates)
     return ga
 
 def get_fitness_rates(ga : GeneticAlgorithm):
@@ -72,12 +64,12 @@ def get_fitness_rates(ga : GeneticAlgorithm):
 def get_fitness(individual):
     evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(individual)
     error = 0
-    samples = evolved_bit_flip_circuit(evolved_matrix, 0)
-    error = training_shots - np.sum(samples)
-    samples = evolved_bit_flip_circuit(evolved_matrix, 1)
-    error = np.sum(samples)
-    return error/(training_shots*2)
-
+    probabilities = evolved_bit_flip_circuit(evolved_matrix, 0)
+    error += probabilities[0]
+    probabilities = evolved_bit_flip_circuit(evolved_matrix, 1)
+    error += probabilities[1]
+    return error/2 
+    
 def calc_outcomes(results : np.ndarray):
     sum = 0
     for i in range(results.size) :
@@ -86,41 +78,61 @@ def calc_outcomes(results : np.ndarray):
 
 def main():
     print("Begin training the GA")
-    start_time = time.perf_counter()
-    ga = evolve()
-    end_time = time.perf_counter()
-    elapsed_time = end_time - start_time
-    
-    pr.export_ga_run(population_size=population_size, mutation_rate=mutation_rate, crossover_rate=crossover_rate,
-                     tournament_size=tournament_size, fitness_vs_time=fitness_vs_time)
+    global population_size
+    global mutation_rate
+    global crossover_rate
+    global tournament_size
+    global fitness_vs_time
+    for _ in range(10):
+        Y
+        population_size=100
+        mutation_rate=round(np.random.uniform(0.1,0.9),2)
+        crossover_rate=round(np.random.uniform(0.1,0.9),2)
+        tournament_size=np.random.randint(10,50)
+        #mutation_rate=0.75
+        #crossover_rate=0.5
+        #tournament_size=10
+        fitness_vs_time={}
 
-    pr.plot_all_runs()
-    print("----------------------------------------------------")
-    print(f"Time taken to train the GA: {elapsed_time}")
-    print("----------------------------------------------------")
+        start_time = time.perf_counter()
+        ga = evolve()
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
 
-    fitness_rates = get_fitness_rates(ga)
-    parent = ga.get_elite(fitness_rates=fitness_rates, population=ga.population)
-    evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(parent)
+        print("----------------------------------------------------")
+        print(f"Time taken to train the GA: {elapsed_time}")
+        print("----------------------------------------------------")
 
-    print(f"Strongest individual from the GA {parent} \n")
-    print(f"Matrix evolved from individual: {evolved_matrix} \n")
+        fitness_rates = get_fitness_rates(ga)
+        parent = ga.get_elite(fitness_rates=fitness_rates, population=ga.population)
+        evolved_matrix = EvolvedMatrix.generate_2x2_unitary_matrix(parent)
 
-    results_from_0 = shoot_evolved_circuit(evolved_matrix,0)
-    print("----------------------------------------------------")
-    print("Results from 0:")
-    qml.draw(results_from_0)
+        pr.export_ga_run(population_size=population_size, mutation_rate=mutation_rate, crossover_rate=crossover_rate,
+                         tournament_size=tournament_size, fitness_vs_time=fitness_vs_time, matrix=evolved_matrix)
+        print(f"Strongest individual from the GA {parent} \n")
+        #print(f"Matrix evolved from individual: {evolved_matrix} \n")
 
-    print("Outcomes calculated from evolved Matrix:")
-    calc_outcomes(results_from_0)
+        print("----------------------------------------------------")
+        print("Shooting through the circuit:")
+        print(qml.draw(shoot_evolved_circuit)(evolved_matrix,0))
+        print("----------------------------------------------------")
 
-    results_from_1 = shoot_evolved_circuit(evolved_matrix,1)
-    print("----------------------------------------------------")
-    print("Results from 1:")
-    qml.draw(results_from_1)
+        results_from_0 = shoot_evolved_circuit(evolved_matrix,0)
+        print("----------------------------------------------------")
+        print("Results from 0:")
+        
 
-    print("Outcomes calculated from evolved Matrix:")
-    calc_outcomes(results_from_1)
+        print("Outcomes calculated from evolved Matrix:")
+        calc_outcomes(results_from_0)
+
+        results_from_1 = shoot_evolved_circuit(evolved_matrix,1)
+        print("----------------------------------------------------")
+        print("Results from 1:")
+
+        print("Outcomes calculated from evolved Matrix:")
+        calc_outcomes(results_from_1)
+
+    pr.plot_runs_by_file("evolved_paulix_new")
 
 
 if __name__ == "__main__":
